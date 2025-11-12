@@ -1,5 +1,5 @@
 # California_Housing_Prices
-This project is unfinished as of now. The idea behind it is to be more informative; hence, visualization and more relevant information will be added in time.
+This project is unfinished as of 11/11/25. The idea behind it is to be more informative; hence, visualization and more relevant information will be added in time.
 You can look forward to:
   1. Visualizing the Geographical Data
   2. Correlation
