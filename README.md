@@ -1,5 +1,5 @@
 # California_Housing_Prices
-This project is unfinished as of 11/16/25. The idea behind it is to be more informative; hence, visualization and more relevant information will be added in time. I'll also add deeplearning python file as soon as I can.
+This project is unfinished as of 11/19/25. The idea behind it is to be more informative; hence, visualization and more relevant information will be added in time. I'll also add deeplearning python file as soon as I can.
 You can look forward to:
   1. Visualizing the Geographical Data
   2. Correlation
