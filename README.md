@@ -220,7 +220,63 @@ Scores: [71762.76364394 64114.99166359 67771.17124356 68635.19072082 66846.14089
 Mean: 69104.07998247063
 Standard Deviation: 2880.3282098180694
 ```
-  - Cross Validation: The decision tree model tells us that there are no errors.  It means that the Model has baldy overfit the Data. I'll use part of the training set for training and Model Validation of the data. Above, I've used Scikit Learn's Corss-Validation feature which splits the training set into subsets called folds. It trains and evaluates the Decision Tree model, picking a different fold for evaluation every time and training on the other remaining folds. Cross-Validation expects a utility function (greater is better) rather than cost function (lower is better). Hence, the scoring function is opposite of MSE which is a negative value. I will use minus sign before calculation of square root for this reason.
+  - Cross Validation: The decision tree model tells us that there are no errors.  It means that the Model has baldy overfit the Data. I'll use part of the training set for training and Model Validation of the data. Above, I've used Scikit Learn's Corss-Validation feature which splits the training set into subsets called folds. It trains and evaluates the Decision Tree model, picking a different fold for evaluation every time and training on the other remaining folds. Cross-Validation expects a utility function (greater is better) rather than a cost function (lower is better). Hence, the scoring function is opposite of MSE which is a negative value. I will use minus sign before calculation of square root for this reason. The results above shows us that Decision Tree Model is overfitting and performs worse than Linear Regression Model.
+
+**Random Forest Regressor**
+- Random Forests work by training many Decision Trees on a random subsets of the features and then averages out the predictions. I'll build a model on top of other models. This is called Ensemble Learning and this is a great way to push Machine Learning Algorithms.
+  
+- Grid Search and Tuning the Model: I'll use Scikit Learn's Grid Search to fine tune the data. I can tell which hyperparameters I want to experiment with and what values to try and it will evaluate all possible combinations of hyperparameters using CV. I also saved the model so that we can always access it easily. I'll save the models by using the joblib library which is more effictive at serializing large Numpy arrays. I'll save one at the very end too. 
+
+```javascript
+#@ Random Forest Regressor:
+from sklearn.ensemble import RandomForestRegressor
+forest_reg = RandomForestRegressor(n_estimators = 160, min_samples_leaf = 3, n_jobs = -1, random_state = 42)                  #Instantiating the Model
+forest_reg.fit(housing_prepared, housing_labels)                                                                              #Training the Model
+housing_prediction = forest_reg.predict(housing_prepared)
+forest_mse = mean_squared_error(housing_labels, housing_prediction)                                                           #Calculating mean squared error
+forest_rmse = np.sqrt(forest_mse)
+print(forest_rmse)                                                                                                            #Inspecting the root mean squared error
+print("\n")
+
+27721.962704061087
+
+Scores: [51537.44644114 48652.38768506 46540.95280581 52149.30883492 47142.82796449 51387.3530314  52089.39931894 49830.72242666 48443.56622348 53994.04142916]
+Mean: 50176.80061610752
+Standard Deviation: 2308.8748302001177
+
+#@ Random Forest Regressor with Cross Validation:
+forest_scores = cross_val_score(forest_reg, housing_prepared, housing_labels, scoring = "neg_mean_squared_error", cv = 10)
+forest_scores_rmse = np.sqrt(-forest_scores)
+display_scores(forest_scores_rmse)                                                                                            #Inspecting the scores
+#@ Saving the Random Forest Model:
+import joblib
+joblib.dump(forest_reg, "forest_reg.pkl")
+                                        
+['forest_reg.pkl']
+
+from sklearn.model_selection import GridSearchCV
+param_grid = [
+    {"n_estimators": [30, 60, 90, 120], "max_features": [2,3,4]},
+    {"bootstrap": [False], "n_estimators": [90, 120], "max_features": [2,3,4]}
+]
+forest_reg = RandomForestRegressor(random_state = 42)
+grid_search = GridSearchCV(forest_reg, param_grid, cv = 5, scoring = "neg_mean_squared_error", return_train_score = True)
+
+grid_search.fit(housing_prepared, housing_labels)
+
+#@ Inspecting the Results:
+print(grid_search.best_params_)
+print("\n")
+print(grid_search.best_estimator_)
+print("\n")
+
+#@ Inspecting the Scores:
+cvresults = grid_search.cv_results_
+for mean_score, params in zip(cvresults["mean_test_score"], cvresults["params"]):
+  print(np.sqrt(-mean_score), params)
+print("\n")
+IPython.display.display(pd.DataFrame(grid_search.cv_results_))
+```
 
 
 
