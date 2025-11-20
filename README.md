@@ -277,6 +277,81 @@ for mean_score, params in zip(cvresults["mean_test_score"], cvresults["params"])
 print("\n")
 IPython.display.display(pd.DataFrame(grid_search.cv_results_))
 ```
+**Results**
+- Several regression models were trained and evaluated using cross-validation (CV) on the training set:
+  Model	                      Cross-Validation RMSE (Approx.)
+  Random Forest Regressor	    ~50,176.80
+  Decision Tree Regressor	    ~71,407.36
+  Linear Regression	          ~69,104.08
+- The Random Forest Regressor  is the lowest, confirming it has the best average performance with a mean RMSE of $50,177.
 
+**Fine Tuning and Evaluation**
+- I'll use Scikit Learn's Grid Search to fine tune the data. I can tell which hyperparameters I want to experiment with and what values to try and it will evaluate all possible combinations of hyperparameters using CV.
+
+```javascript
+from sklearn.model_selection import GridSearchCV
+param_grid = [
+    {"n_estimators": [30, 60, 90, 120], "max_features": [2,3,4]},
+    {"bootstrap": [False], "n_estimators": [90, 120], "max_features": [2,3,4]}
+]
+forest_reg = RandomForestRegressor(random_state = 42)
+grid_search = GridSearchCV(forest_reg, param_grid, cv = 5, scoring = "neg_mean_squared_error", return_train_score = True)
+
+grid_search.fit(housing_prepared, housing_labels)
+
+#@ Inspecting the Results:
+print(grid_search.best_params_)
+print("\n")
+print(grid_search.best_estimator_)
+print("\n")
+
+#@ Inspecting the Scores:
+cvresults = grid_search.cv_results_
+for mean_score, params in zip(cvresults["mean_test_score"], cvresults["params"]):
+  print(np.sqrt(-mean_score), params)
+print("\n")
+IPython.display.display(pd.DataFrame(grid_search.cv_results_))
+
+#@ Analyzing the Best Models and Errors:
+feature_importances = grid_search.best_estimator_.feature_importances_
+extra_attribs = ["rooms_per_household", "population_per_household", "bedrooms_per_room"]
+cat_encoder = pipeline.named_transformers_["cat"]
+cat_onehot_attribs = list(cat_encoder.categories_[0])
+attributes = num_attribs + extra_attribs + cat_onehot_attribs
+sorted(zip(feature_importances, attributes), reverse = True)
+
+#@ Evaluating the System on Testset:
+final_model = grid_search.best_estimator_
+X_test = strat_test_set.drop("median_house_value", axis = 1)
+y_test = strat_test_set["median_house_value"].copy()  
+#@ Preparing the Data:
+X_test_prepared = pipeline.transform(X_test)
+final_predictions = final_model.predict(X_test_prepared)
+#@ Evaluating the Model:
+final_mse = mean_squared_error(y_test, final_predictions)           #Calculating the mean squared error
+final_rmse = np.sqrt(final_mse)                                     #Calculating the root mean squared error
+print(final_rmse)
+
+46043.82242621413
+
+```
+**Confidence Interval**
+- Instead of just getting a single number (a point estimate) for the RMSE, this gives us a range (an interval estimate) where the true, generalized error of out model is likely to fall.
+
+```javascript
+#@ Computing a 95% confidence interval:
+from scipy import stats
+confidence = 0.95
+squared_errors = (final_predictions - y_test) ** 2
+np.sqrt(stats.t.interval(confidence, len(squared_errors) - 1, loc = squared_errors.mean(), scale = stats.sem(squared_errors)))
+
+array([44117.95875455, 47892.30504544])
+```
+- We can be $95\%$ confident that the true error of this prediction system, if deployed, would fall within the range of $\$44,117.96$ and $\$47,892.31$. This narrow range confirms that the model is highly stable and provides a reliable estimate of California housing prices.
+
+
+
+
+ 
 
 
