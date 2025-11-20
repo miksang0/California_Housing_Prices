@@ -74,4 +74,153 @@ print("Comparison of Income Category Proportions:")
 IPython.display.display(compare_props)
 print("\n")
 ```
+**Visualizing the Geographical Data**
+
+* A Scatter Plot to visualize the housing density is the best way to look at the data more closely. We can examine housing prices. Each circle represents the district's population. which is labelled as 's'. 'c' is color which represents our median_house_value. Jet is a predefined color map availabe which has 2 values blue and red representing low values and high values respectively. I have also used alpha option as 0.4 which makes it much easier to visualize the places where there has high density.
+
+<img width="640" height="480" alt="Geographical Data" src="https://github.com/user-attachments/assets/bdfc5636-2c27-481d-ab70-f3f30540f25b" />
+
+**Correlations**
+- I have used corr method to compute the standard correlation between every pair of attributes. I also used Pandas' scatter matrix function to check the Correlations between attributes. Here is a snapshot of it.
+
+<img width="1021" height="707" alt="image" src="https://github.com/user-attachments/assets/0a3b0fe6-175c-49f5-903f-e7a78f2c4e95" />
+
+**Data Preparation**
+- Machine Learning Algorithms cannot work with missing attributes. Previously, we saw that total bedrooms attribute has some missing values. Scikit Learn has a class which helps us fill the missing values: SimpleImputer.
+I'll create an instance and replace all the missing values with median of the attribute. Median can only be calculated on the numerical arributes hence, I'll work on a copy of the data without ocean proximity.
+
+- We only took care of the numerical attributes previously. Now, we will be looking at the text attribute and in this case, we only have one: Ocean Proximity. I'll use Scikit Learns' Ordinal Encoder Class to convert all the categorical attributes into numbers. There is an issue with how we have representated the values. ML Algorithms assumes that two nearby values are more similar than two distant values. While true in some instances ('bad', 'good', 'excellent'). That is not the case in Ocean Proximity. I will apply One Hot Encoding which provides OneHotEncoder class to convert all the Categroical values into One Hot Vectors. They are called dummy attributes.   
+
+```javascript
+#@ Preaparing the Data:
+housing = strat_train_set.drop("median_house_value", axis = 1)      #Drop the lables from the Traning set.
+housing_labels = strat_train_set["median_house_value"].copy()
+#@ Working on the missing values:
+incomplete_rows = housing[housing.isnull().any(axis=1)].head()
+IPython.display.display(incomplete_rows)                          #Inspecting the missing values
+
+incomplete_rows_dropped = incomplete_rows.dropna(subset=["total_bedrooms"], axis = 0) # Getting rid of corresponding districts
+
+median = housing["total_bedrooms"].median()                        #Calculating the median
+
+incomplete_rows["total_bedrooms"].fillna(median, inplace = True)  #Filling the median values
+
+print("\nRows after filling NaNs in total_bedrooms with median:") #Inspecting the data after filling the missing values with median
+IPython.display.display(incomplete_rows)
+
+#@ Missing Values:
+from sklearn.impute import SimpleImputer
+imputer = SimpleImputer(strategy = "median")                           #Instantiating the Imputer
+housing_num = housing.drop("ocean_proximity", axis=1)                  #Removing the Text Attribute
+imputer.fit(housing_num)                                               #Fitting the imputer into Trainig Data
+print(imputer.statistics_)
+
+print(housing_num.median().values)                                     #Inspecting the median values
+X = imputer.transform(housing_num)                                     #Transforming the Traning data set with trained Imputer
+housing_imputed = pd.DataFrame(X, columns = housing_num.columns)       #Createing the DataFrame with numpy arrays
+print("\n")
+IPython.display.display(housing_imputed.head())
+
+#@ Handling Text and Categroical Attribute:
+from sklearn.preprocessing import OrdinalEncoder
+housing_cat = housing[["ocean_proximity"]]
+print(housing_cat.head())                                         #Inspecting the Categorical attribute
+ordinal_encoder = OrdinalEncoder()                                #Instantiating the Encoder
+housing_cat_encoded = ordinal_encoder.fit_transform(housing_cat)  #Encoding the Text
+IPython.display.display(housing_cat_encoded[:10])                 #Inspecting the Encoded Text
+print("\n")
+print(ordinal_encoder.categories_)                                #Inspecting the Categories
+
+#@ One Hot Encoding:
+from sklearn.preprocessing import OneHotEncoder
+cat_encoder = OneHotEncoder(sparse_output = False)                #Instantiating OneHotEncoder
+housing_cat_onehot = cat_encoder.fit_transform(housing_cat)       #Encoding the text
+print(housing_cat_onehot[:10])
+print("\n")
+print(cat_encoder.categories_)                                    #Inspecting the list of categories
+
+```
+
+**Training the Model**
+- We have to apply feature scaling in our data because ML algorithims doesn't perform well when the input numerical attributes have very different scales. We hav two common ways to get the same scale: a. Min-Max Scaling (Normalization) and b. Standarization
+- Inorder to simply the many steps on Data Transformation, We will use Sciki Learn's Pipeline class to create a proper sequence. We have been handling the Categorical and Numerical Columns separetely until now. It's easier to have a single Transformer handle all the columns applying appropriate transmformations to each column. Scikit Learn has ColumnTransformer class which we will apply to all the Transformations to the Housing Data.
+  - Linear Regression: I will train the Machine Learning Model using Linear Regression.
+
+```javascript
+#@ Training the Model:
+from sklearn.linear_model import LinearRegression
+lin_reg = LinearRegression()                              #Instantiating the Model
+lin_reg.fit(housing_prepared, housing_labels)             #Training the Linear Model
+
+#@ Inspecting the Model on few instances:
+some_data = housing.iloc[:5]
+some_labels = housing_labels.iloc[:5]
+some_prepared = pipeline.transform(some_data)
+print(f"Predictions: {lin_reg.predict(some_prepared)}")   #Inspecting the Predictions
+print(f"Labels: {list(some_labels)}")
+
+Predictions: [ 85657.90192014 305492.60737488 152056.46122456 186095.70946094
+ 244550.67966089]
+Labels: [72100.0, 279600.0, 82700.0, 112500.0, 238300.0]
+
+#@ Closer look at the Errors:
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+housing_prediction = lin_reg.predict(housing_prepared)
+lin_mse = mean_squared_error(housing_labels, housing_prediction)
+lin_rmse = np.sqrt(lin_mse)
+print(lin_rmse)                                                          #Inspecting the root mean squared error
+
+lin_mae = mean_absolute_error(housing_labels, housing_prediction)
+print(lin_mae)                                                           #Inspecting the mean absolute error
+
+68627.87390018745
+49438.66860915802
+```
+  - Decision Trees: The obtained score is not very satisfying. It's clear that our Model is underfitting the training data. The features doesn't provide enough information to make good predictions. We can tackle this by selecting a more powerful model to feed the training algorithm with better features or by reducing the constrains on the model. I'll try a more complex model which is DecisionTreeRegressor before deciding on complicating it any further.
+
+```javascript
+
+#@ Implementation of Decision Trees:
+from sklearn.tree import DecisionTreeRegressor
+tree_reg = DecisionTreeRegressor(random_state = 11)           #Instantiating the Model
+tree_reg.fit(housing_prepared, housing_labels)                #Training the Model
+housing_prediction = tree_reg.predict(housing_prepared)      #Making Predictions
+
+tree_mse = mean_squared_error(housing_labels, housing_prediction)
+tree_rmse = np.sqrt(tree_mse)
+print(tree_rmse)                                              #Inspecting the Root Mean Squared Error
+
+0.0
+
+#@ Implementation of Cross Validation with Decision Trees:
+from sklearn.model_selection import cross_val_score
+scores = cross_val_score(tree_reg, housing_prepared, housing_labels, scoring = "neg_mean_squared_error", cv=10)
+tree_rmse_scores = np.sqrt(-scores)
+
+#@ Inspecting the Results:
+def display_scores(scores):
+  print(f"Scores: {scores}")
+  print(f"Mean: {scores.mean()}")
+  print(f"Standard Deviation: {scores.std()}")
+
+display_scores(tree_rmse_scores)                              #Inspecting the scores
+
+#@ Implementation of Cross Validation with Linear Regression:
+print("\n")
+lin_scores= cross_val_score(lin_reg, housing_prepared, housing_labels, scoring = "neg_mean_squared_error", cv = 10)
+lin_rmse_scores = np.sqrt(-lin_scores)
+display_scores(lin_rmse_scores)                               #Inspecting the scores
+
+Scores: [72245.94614105 69219.13480855 69507.37626747 72004.10673002 68106.4397735  77285.38495403 72048.80518577 73846.31128012 69566.5579257  70243.58659565]
+Mean: 71407.36496618605
+Standard Deviation: 2569.1965443766762
+
+
+Scores: [71762.76364394 64114.99166359 67771.17124356 68635.19072082 66846.14089488 72528.03725385 73997.08050233 68802.33629334 66443.28836884 70139.79923956]
+Mean: 69104.07998247063
+Standard Deviation: 2880.3282098180694
+```
+  - Cross Validation: The decision tree model tells us that there are no errors.  It means that the Model has baldy overfit the Data. I'll use part of the training set for training and Model Validation of the data. Above, I've used Scikit Learn's Corss-Validation feature which splits the training set into subsets called folds. It trains and evaluates the Decision Tree model, picking a different fold for evaluation every time and training on the other remaining folds. Cross-Validation expects a utility function (greater is better) rather than cost function (lower is better). Hence, the scoring function is opposite of MSE which is a negative value. I will use minus sign before calculation of square root for this reason.
+
+
 
