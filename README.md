@@ -80,6 +80,9 @@ print("\n")
 
 <img width="640" height="480" alt="Geographical Data" src="https://github.com/user-attachments/assets/bdfc5636-2c27-481d-ab70-f3f30540f25b" />
 
+<img width="1000" height="700" alt="HousingPrices" src="https://github.com/user-attachments/assets/d71c325b-5a4b-4c57-b7fc-7fd994200000" />
+
+
 **Correlations**
 - I have used corr method to compute the standard correlation between every pair of attributes. I also used Pandas' scatter matrix function to check the Correlations between attributes. Here is a snapshot of it.
 
