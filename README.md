@@ -1,6 +1,6 @@
 # Model for California Housing Prices
 ** Objective:**
-      *This project is a Machine Learning regression task focused on predicting the median house value for districts in California. The objective is to build a robust         model of housing prices using data from the California Census.
+*This project is a Machine Learning regression task focused on predicting the median house value for districts in California. The objective is to build a robust         model of housing prices using data from the California Census.
   
 You can look forward to:
   1. Visualizing the Geographical Data
