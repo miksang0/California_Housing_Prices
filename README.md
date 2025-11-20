@@ -33,7 +33,45 @@ from sklearn.model_selection import RandomizedSearchCV
 
 <img width="1500" height="1000" alt="Histogram" src="https://github.com/user-attachments/assets/12fff16f-1712-4aa3-837a-266725ecc9ca" />
 
-- The analysis shows us that the DataFrame has 20640 non-null values except for total_bedrooms. It means values for 207 districts are missing. Also, the ocean_proximity has the datatype of an object which means this attribute is repetitive and is most likely to be a categorical attribute.
+- The analysis shows us that the DataFrame has 20640 non-null values except for total_bedrooms. It means values for 207 districts are missing. Also, the ocean_proximity has the datatype of an object, which means this attribute is repetitive and is most likely to be a categorical attribute.
 
+**Stratified Sampling**
+- I have used stratified sampling, which will give us proportional representation of each income category, which means less bias. I have also used Scatter Matrix and Attribute combinations using Python.
+  
+```javascript
+#@ Stratified Sampling on the basis of Income Category:
+from sklearn.model_selection import StratifiedShuffleSplit
+import IPython.display
 
+split = StratifiedShuffleSplit(n_splits = 1, test_size = 0.2, random_state = 42)
+for train_index, test_index in split.split(housing, housing["income_cat"]):
+  strat_train_set = housing.loc[train_index]
+  strat_test_set = housing.loc[test_index]
+
+#@ Calculating proportions for Stratified Split
+strat_props = strat_test_set["income_cat"].value_counts() / len(strat_test_set)                 #Income Category in Test Set
+
+#@ Calculate proportions for the Overall Dataset
+overall_props = housing["income_cat"].value_counts() / len(housing)
+
+#@ Generate a Random Split for comparison purposes
+train_set_rand, test_set_rand = train_test_split(housing, test_size=0.2, random_state=11)       #Splitting the dataset
+random_props = test_set_rand["income_cat"].value_counts() / len(test_set_rand)
+
+#@ Create the Comparison DataFrame
+compare_props = pd.DataFrame({
+    "Overall": overall_props,
+    "Stratified": strat_props,
+    "Random": random_props
+}).sort_index()
+
+#@ # Calculate % Error
+compare_props["Random % Error"] = 100 * compare_props["Random"] / compare_props["Overall"] - 100
+compare_props["Stratified % Error"] = 100 * compare_props["Stratified"] / compare_props["Overall"] - 100
+
+#@ Display the results
+print("Comparison of Income Category Proportions:")
+IPython.display.display(compare_props)
+print("\n")
+```
 
